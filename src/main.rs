@@ -259,10 +259,10 @@ async fn main() -> eyre::Result<()> {
                     },
                 ),
             );
-            if let Some(v) = versions.get(&name) {
-                if v.0 >= ver {
-                    break;
-                }
+            if let Some(v) = versions.get(&name)
+                && v.0 >= ver
+            {
+                break;
             }
             total_new += 1;
             print!(
