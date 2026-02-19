@@ -160,16 +160,16 @@ async fn main() -> eyre::Result<()> {
     let client = Client::new();
     let mut tasks: Vec<JoinHandle<eyre::Result<()>>> = Vec::new();
     while !list.is_empty() {
-        let name = list.remove(0);
-        let url = if name.0 == "The-Swordmasters-Son" {
+        let n = list.remove(0);
+        let url = if n.0 == "The-Swordmasters-Son" {
             "https://weebcentral.com/search/data?display_mode=Minimal+Display&limit=8&included_tag=Action&text=the+Swordmaster".to_string()
         } else {
             format!(
                 "https://weebcentral.com/search/data?display_mode=Minimal+Display&limit=8&text={}",
-                name.1.as_ref().unwrap_or(&name.0).replace(['-', ' '], "+")
+                n.1.as_ref().unwrap_or(&n.0).replace(['-', ' '], "+")
             )
         };
-        let name = name.0;
+        let name = &n.0;
         let body = client
             .get(url)
             .header(header::REFERER, "https://weebcentral.com")
@@ -189,7 +189,7 @@ async fn main() -> eyre::Result<()> {
             continue;
         };
         let url = get_url(url)?;
-        let url = url.replace(&name, "full-chapter-list");
+        let url = url.replace(name, "full-chapter-list");
         let body = client
             .get(url)
             .header(header::REFERER, "https://weebcentral.com")
@@ -197,6 +197,11 @@ async fn main() -> eyre::Result<()> {
             .await?
             .text()
             .await?;
+        if body == "error code: 1015" {
+            list.insert(0, n);
+            tokio::time::sleep(Duration::from_millis(T)).await;
+            continue;
+        }
         let mut chapters: Vec<String> = body
             .lines()
             .filter_map(|l| {
@@ -226,9 +231,8 @@ async fn main() -> eyre::Result<()> {
                 .await?;
             let (Some(pages), Some(url)) = (
                 body.lines().find(|l| l.contains("max_page: ")),
-                body.lines().find(|l| {
-                    l.contains(&name) && l.contains("href") && l.contains("as=\"image\"")
-                }),
+                body.lines()
+                    .find(|l| l.contains(name) && l.contains("href") && l.contains("as=\"image\"")),
             ) else {
                 if !new_chapters.is_empty() {
                     let new = std::mem::take(&mut new_chapters);
@@ -259,11 +263,11 @@ async fn main() -> eyre::Result<()> {
                         page_count: pages,
                         url: site.clone(),
                         append: append.clone(),
-                        is_list: versions.get(&name).map(|(_, l)| *l).unwrap_or(false),
+                        is_list: versions.get(name).map(|(_, l)| *l).unwrap_or(false),
                     },
                 ),
             );
-            if let Some(v) = versions.get(&name)
+            if let Some(v) = versions.get(name)
                 && v.0 >= ver
             {
                 break;
