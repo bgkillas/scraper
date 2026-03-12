@@ -1,7 +1,7 @@
 use eyre::ContextCompat;
 use futures::future::join_all;
 use image::{GenericImage, ImageFormat, RgbImage};
-use reqwest::header::CONTENT_TYPE;
+use reqwest::header::{CONTENT_TYPE, HeaderValue};
 use reqwest::{Client, header};
 use std::cmp::{Ordering, PartialOrd};
 use std::collections::HashMap;
@@ -405,13 +405,16 @@ async fn get_img(
             page,
             chapter.append
         );
-        let body = client
+        let Ok(body) = client
             .get(url)
             .header(header::REFERER, "https://weebcentral.com")
             .send()
             .await
-            .unwrap();
-        if body.headers().get(CONTENT_TYPE).unwrap().to_str().unwrap() != "image/png" {
+        else {
+            tokio::time::sleep(Duration::from_millis(TS)).await;
+            continue;
+        };
+        if body.headers().get(CONTENT_TYPE) != Some(&HeaderValue::from_static("image/png")) {
             tokio::time::sleep(Duration::from_millis(TS)).await;
             continue;
         }
