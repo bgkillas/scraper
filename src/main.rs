@@ -161,14 +161,10 @@ async fn main() -> eyre::Result<()> {
     let mut tasks: Vec<JoinHandle<eyre::Result<()>>> = Vec::new();
     while !list.is_empty() {
         let n = list.remove(0);
-        let url = if n.0 == "The-Swordmasters-Son" {
-            "https://weebcentral.com/search/data?display_mode=Minimal+Display&limit=8&included_tag=Action&text=the+Swordmaster".to_string()
-        } else {
-            format!(
-                "https://weebcentral.com/search/data?display_mode=Minimal+Display&limit=8&text={}",
-                n.1.as_ref().unwrap_or(&n.0).replace(['-', ' '], "+")
-            )
-        };
+        let url = format!(
+            "https://weebcentral.com/search/data?display_mode=Minimal+Display&limit=8&text={}",
+            n.1.as_ref().unwrap_or(&n.0).replace(['-', ' '], "+")
+        );
         let name = &n.0;
         let body = client
             .get(url)
