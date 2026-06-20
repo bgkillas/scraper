@@ -1,4 +1,4 @@
-use eyre::ContextCompat;
+use eyre::{Context, ContextCompat};
 use futures::future::join_all;
 use image::{GenericImage, ImageFormat, RgbImage};
 use reqwest::header::{CONTENT_TYPE, HeaderValue};
@@ -193,7 +193,7 @@ async fn main() -> eyre::Result<()> {
             .await?
             .text()
             .await?;
-        if body == "error code: 1015" {
+        if body.contains("error code: 1015") {
             list.insert(0, n);
             tokio::time::sleep(Duration::from_millis(T)).await;
             continue;
@@ -484,7 +484,8 @@ async fn convert_to_strip(
     };
     let mut images = Vec::new();
     for path in &paths {
-        let w = image::load_from_memory(path)?;
+        let w = image::load_from_memory(path)
+            .with_context(|| format!("{:04}{}", version.major, version.minor.unwrap_or(0)))?;
         if w.width() == width {
             height += w.height();
             images.push(w.as_rgb8().wrap_err("image err")?.clone());
