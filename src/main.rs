@@ -201,8 +201,16 @@ async fn main() -> eyre::Result<()> {
         let mut chapters: Vec<String> = body
             .lines()
             .filter_map(|l| {
-                if l.contains("https://weebcentral.com/chapters/") {
-                    Some(l.to_string())
+                if l.contains("<a href=\"/chapters/") {
+                    Some(format!(
+                        "href=\"https://weebcentral.com/chapters/{}\"",
+                        l.split_once("/chapters/")
+                            .unwrap()
+                            .1
+                            .split_once("\"")
+                            .unwrap()
+                            .0
+                    ))
                 } else {
                     None
                 }
@@ -438,7 +446,7 @@ async fn download(
             .map(async |page| {
                 let client = client.clone();
                 let chapter = chapter.clone();
-                tokio::spawn(async move { get_img(chapter, version, page, client).await })
+                tokio::spawn(get_img(chapter, version, page, client))
                     .await
                     .unwrap()
             })
